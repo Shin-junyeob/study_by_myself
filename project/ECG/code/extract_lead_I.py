@@ -4,7 +4,7 @@ import wfdb
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
-data_path = "/students/lifecare/team6/data"
+data_path = "/mnt/c/Users/junyu/Desktop/Study/study_by_myself/project/ECG/data"
 metadata_path = os.path.join(data_path, "metadata.csv")
 scp_statements_path = os.path.join(data_path, "scp_statements.csv")
 output_path = [os.path.join(data_path, "processed_data/100Hz"), os.path.join(data_path, "processed_data/500Hz")]
