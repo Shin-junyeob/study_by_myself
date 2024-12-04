@@ -2,127 +2,93 @@ import os
 import pandas as pd
 import numpy as np
 import wfdb
-import seaborn as sns
-import matplotlib.pyplot as plt
+import pickle
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.utils.class_weight import compute_class_weight
+from sklearn.model_selection import GridSearchCV
 
-data_path = "../data/processed_data/100Hz"
-metadata_path = "../data/metadata.csv"
+def load_dataset(metadata_path, data_path):
+    metadata = pd.read_csv(metadata_path)
 
-metadata = pd.read_csv(metadata_path)
-metadata['labels'] = metadata['labels'].apply(lambda x: x.split(","))
+    def load_signals(set_name):
+        subset = metadata[metadata['set'] == set_name]
+        signals, labels = [], []
+        for _, row in subset.iterrows():
+            file_path = os.path.join(data_path, set_name, f"{row['file_name'].split('/')[1]}.dat")
+            try:
+                signal, fields = wfdb.rdsamp(file_path.replace('.dat', ''))
+                signals.append(signal.flatten())  # Lead-I 데이터 로드
+                labels.append(row['sub_label'])
+            except Exception as e:
+                print(f"Error loading {file_path}: {e}")
 
-def load_data(set_name, metadata, data_path):
-    subset = metadata[metadata['set'] == set_name]
-    signals = []
-    labels = []
+        return np.array(signals), labels
 
-    for _, row in subset.iterrows():
-        base_name = os.path.basename(row['file_path_lr'])
-        dat_path = os.path.join(data_path, set_name, base_name + ".dat")
-        hea_path = os.path.join(data_path, set_name, base_name + ".hea")
+    X_train, y_train = load_signals('train')
+    X_val, y_val = load_signals('validation')
+    X_test, y_test = load_signals('test')
 
-        if not os.path.exists(dat_path):
-            print(f"Missing .dat file: {dat_path}")
-            continue
-        if not os.path.exists(hea_path):
-            print(f"Missing .hea file: {hea_path}")
-            continue
+    return (X_train, y_train), (X_val, y_val), (X_test, y_test)
 
-        try:
-            record = wfdb.rdsamp(dat_path.replace('.dat', ''))
-            signal = record[0].flatten()
-            signal = (signal - np.mean(signal)) / np.std(signal)
-            signals.append(signal)
-            labels.append(row['labels'])
-        except Exception as e:
-            print(f"Error loading file {dat_path}: {e}")
+def preprocess_data(X, y, fit_scaler=False, scaler=None, encoder=None):
+    if len(X.shape) == 1:  # 1D 데이터를 2D로 변환
+        X = X.reshape(-1, 1)
 
-    return np.array(signals), labels
+    if scaler is None:
+        scaler = StandardScaler()
+    X = scaler.fit_transform(X) if fit_scaler else scaler.transform(X)
 
-print("Loading data...")
-X_train, y_train = load_data("train", metadata, data_path)
-X_val, y_val = load_data("validation", metadata, data_path)
-X_test, y_test = load_data("test", metadata, data_path)
-print("Data loading completed.")
+    if encoder is None:
+        encoder = LabelEncoder()
+    y = encoder.fit_transform(y) if fit_scaler else encoder.transform(y)
 
-mlb = MultiLabelBinarizer()
-y_train_bin = mlb.fit_transform(y_train)
-y_val_bin = mlb.transform(y_val)
-y_test_bin = mlb.transform(y_test)
+    return X, y, scaler, encoder
 
-class_weights_list = []
-for i in range(y_train_bin.shape[1]):
-    class_weight = compute_class_weight(
-        class_weight="balanced",
-        classes=np.array([0, 1]),
-        y=y_train_bin[:, i]
-    )
-    class_weights_list.append({0: class_weight[0], 1: class_weight[1]})
+def save_results_to_pickle(report, accuracy, best_params, best_estimator, file_path):
+    results = {
+        "classification_report": report,
+        "accuracy_score": accuracy,
+        "best_params": best_params,
+        "best_estimator": best_estimator
+    }
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)  # 디렉터리 생성
+    with open(file_path, 'wb') as f:
+        pickle.dump(results, f)
+    print(f"Results saved to {file_path}")
 
-print("Training Random Forest model...")
-rf = RandomForestClassifier(
-    n_estimators=100,
-    random_state=42,
-    class_weight=class_weights_list
-)
-rf.fit(X_train, y_train_bin)
+def main():
+    metadata_path = '../data/metadata.csv'
+    data_path = '../data/processed_data/100Hz'
+    output_path = '../results/sklearn'
 
-print("Evaluating on validation set...")
-y_val_pred = rf.predict(X_val)
-val_accuracy = accuracy_score(y_val_bin, y_val_pred)
-print(f"Validation Accuracy: {val_accuracy:.4f}")
+    (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_dataset(metadata_path, data_path)
 
-print("Evaluating on test set...")
-y_test_pred = rf.predict(X_test)
-test_accuracy = accuracy_score(y_test_bin, y_test_pred)
-print(f"Test Accuracy: {test_accuracy:.4f}")
+    # 데이터 전처리
+    X_train, y_train, scaler, encoder = preprocess_data(X_train, y_train, fit_scaler=True)
+    X_test, y_test, _, _ = preprocess_data(X_test, y_test, fit_scaler=False, scaler=scaler, encoder=encoder)
 
-print("Classification Report (Test Set):")
-print(classification_report(y_test_bin, y_test_pred, target_names=mlb.classes_))
+    # GridSearchCV 설정
+    rf = RandomForestClassifier(random_state=42)
+    param_grid = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [10, 20, 30],
+        'min_samples_split': [2, 5, 10],
+        'max_features': ['sqrt', 'log2']
+    }
 
-output_path = '../results'
-os.makedirs(output_path, exist_ok=True)
-results_file = os.path.join(output_path, 'RF_model_results.xlsx')
+    CV_rf = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, scoring='accuracy', verbose=2, n_jobs=-1)
+    CV_rf.fit(X_train, y_train)
 
-accuracy = test_accuracy
-classification_rep = classification_report(y_test_bin, y_test_pred, target_names = mlb.classes_, output_dict = True)
-classification_df = pd.DataFrame(classification_rep).transpose()
+    # 결과 저장
+    y_pred = CV_rf.best_estimator_.predict(X_test)
+    report = classification_report(y_test, y_pred, output_dict=True)
+    accuracy = accuracy_score(y_test, y_pred)
+    best_params = CV_rf.best_params_
+    best_estimator = CV_rf.best_estimator_
 
-conf_matrix = confusion_matrix(
-    y_test_bin.argmax(axis=1),
-    y_test_pred.argmax(axis=1)
-)
-conf_matrix_df = pd.DataFrame(conf_matrix, index = mlb.classes_, columns = mlb.classes_)
-plt.figure(figsize=(12, 10))
-sns.heatmap(conf_matrix_df, annot = True, fmt = 'd', cmap = 'Blues', xticklabels = mlb.classes_, yticklabels = mlb.classes_)
-plt.title('Confusion Matrix')
-plt.xlabel('Predicted')
-plt.ylabel('Actual')
-confusion_matrix_image_path = os.path.join(output_path, 'RF_confusion_matrix.png')
-plt.savefig(confusion_matrix_image_path, dpi = 300, bbox_inches = 'tight')
-plt.close()
+    output_pickle_path = '../results/RF_model.pkl'
+    save_results_to_pickle(report, accuracy, best_params, best_estimator, output_pickle_path)
 
-correlation_matrix = np.corrcoef(y_test_pred.T)
-plt.figure(figsize=(12, 10))
-sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm', xticklabels=mlb.classes_, yticklabels=mlb.classes_)
-plt.title("Correlation Matrix of Predicted Labels")
-correlation_matrix_image_path = os.path.join(output_path, 'RF_correlation_matrix.png')
-plt.savefig(correlation_matrix_image_path, dpi = 300, bbox_inches = 'tight')
-plt.close()
-
-def save_results_to_file(output_path, accuracy, classification_report_df):
-    os.makedirs(output_path, exist_ok=True)
-    
-    results_file = os.path.join(output_path, "RF_model_results.xlsx")
-    with open(results_file, "w", encoding="utf-8") as f:
-        f.write(f"Test Accuracy: {accuracy:.4f}\n")
-        f.write("\nClassification Report:\n")
-        f.write(classification_report_df.to_string(index=True))
-
-    print(f"Results saved to {results_file}")
-
-save_results_to_file(output_path, accuracy, classification_df)
+if __name__ == "__main__":
+    main()
