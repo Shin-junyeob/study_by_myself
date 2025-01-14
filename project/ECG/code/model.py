@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class CNNLSTMModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_classes):
         super(CNNLSTMModel, self).__init__()
@@ -65,15 +66,19 @@ class ResNet1DModel(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.layer1 = self._make_layer(64, 64, 3)
         self.layer2 = self._make_layer(64, 128, 4, stride=2)
+        self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
         self.fc = nn.Linear(128, num_classes)
 
     def _make_layer(self, in_channels, out_channels, blocks, stride=1):
         layers = []
-        for _ in range(blocks):
-            layers.append(nn.Conv1d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1))
+        for i in range(blocks):
+            if i == 0:
+                # Only the first block applies stride for downsampling
+                layers.append(nn.Conv1d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1))
+            else:
+                layers.append(nn.Conv1d(out_channels, out_channels, kernel_size=3, stride=1, padding=1))
             layers.append(nn.BatchNorm1d(out_channels))
             layers.append(nn.ReLU(inplace=True))
-            stride = 1  # Only first block applies stride
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -82,7 +87,8 @@ class ResNet1DModel(nn.Module):
         x = self.relu(x)
         x = self.layer1(x)
         x = self.layer2(x)
-        x = torch.mean(x, dim=2)  # Global average pooling
+        x = self.global_avg_pool(x)
+        x = x.view(x.size(0), -1)  # Flatten for fully connected layer
         x = self.fc(x)
         return x
 

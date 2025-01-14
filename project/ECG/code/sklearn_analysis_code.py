@@ -50,7 +50,7 @@ def preprocess_data(X, y, fit_scaler=False, scaler=None, encoder=None):
 
 
 def train_and_evaluate_sklearn_model(model, X_train, y_train, X_test, y_test, encoder, output_path):
-    print(f'Operating about {model.__class__.__name__} ...')
+    print(f"Operating about {model.__clas__.__name__} ...")
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
@@ -74,12 +74,10 @@ def main():
     data_path = '../data/processed_data/100Hz'
     output_path = '../results/sklearn'
 
-    # Load and preprocess data
     (X_train, y_train), (_, _), (X_test, y_test) = load_dataset(metadata_path, data_path)
     X_train, y_train, scaler, encoder = preprocess_data(X_train, y_train, fit_scaler=True)
     X_test, y_test, _, _ = preprocess_data(X_test, y_test, scaler=scaler, encoder=encoder)
 
-    # Models
     models = [
         RandomForestClassifier(n_estimators=100, n_jobs=-1),
         GradientBoostingClassifier(n_estimators=100),
@@ -87,13 +85,11 @@ def main():
         SVC(probability=True)
     ]
 
-    # Train and evaluate models
     results = []
     for model in models:
         accuracy, report = train_and_evaluate_sklearn_model(model, X_train, y_train, X_test, y_test, encoder, output_path)
         results.append({"Model": model.__class__.__name__, "Accuracy": accuracy})
 
-    # Save results summary
     results_df = pd.DataFrame(results)
     results_df.to_csv(os.path.join(output_path, "results_summary.csv"), index=False)
     print("Summary saved.")

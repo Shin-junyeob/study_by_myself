@@ -1,0 +1,11 @@
+=== ACCURACY ===
+0.6417569880205363
+
+=== CLASSIFICATION_REPORT ===
+NORM: {'precision': 0.7092829349638688, 'recall': 0.8307291666666666, 'f1-score': 0.7652173913043478, 'support': 1536.0}
+MI: {'precision': 0.5789473684210527, 'recall': 0.31285551763367464, 'f1-score': 0.40620384047267355, 'support': 879.0}
+OTHERS: {'precision': 0.547077922077922, 'recall': 0.617781851512374, 'f1-score': 0.5802841153680586, 'support': 1091.0}
+accuracy: 0.634626354820308
+macro avg: {'precision': 0.6117694084876145, 'recall': 0.5871221786042384, 'f1-score': 0.5839017823816933, 'support': 3506.0}
+weighted avg: {'precision': 0.626131014812784, 'recall': 0.634626354820308, 'f1-score': 0.617660313372935, 'support': 3506.0}
+

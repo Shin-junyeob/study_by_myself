@@ -1,0 +1,5 @@
+Model,Accuracy
+RandomForestClassifier,0.5131094756209752
+GradientBoostingClassifier,0.5411683532658693
+LogisticRegression,0.40869365225390986
+SVC,0.47125114995400186

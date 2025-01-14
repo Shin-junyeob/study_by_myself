@@ -52,7 +52,7 @@ def classify_abnormal(labels):
     elif any(rhythm in labels for rhythm in ['AFIB', 'STACH', 'SBRAD', 'SVTAC', 'PSVT', 'AFLT', 'SVARR', 'TRIGU']):
         return 'RHYTHM'
     else:
-        'OTHER'
+        return 'OTHER'
 
 metadata['sub_label'] = metadata['labels'].apply(classify_abnormal)
 

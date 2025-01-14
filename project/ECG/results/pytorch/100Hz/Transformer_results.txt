@@ -1,0 +1,22 @@
+=== MODEL_NAME ===
+Transformer
+
+=== ACCURACY ===
+0.44917203311867526
+
+=== CLASSIFICATION_REPORT ===
+              precision    recall  f1-score   support
+
+          CD       0.00      0.00      0.00       412
+         HYP       0.00      0.00      0.00       113
+          MI       0.00      0.00      0.00      1047
+        NORM       0.45      1.00      0.62      1953
+      RHYTHM       0.00      0.00      0.00        12
+        STTC       0.00      0.00      0.00       751
+         nan       0.00      0.00      0.00        60
+
+    accuracy                           0.45      4348
+   macro avg       0.06      0.14      0.09      4348
+weighted avg       0.20      0.45      0.28      4348
+
+

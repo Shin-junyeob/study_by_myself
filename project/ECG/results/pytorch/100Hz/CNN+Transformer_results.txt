@@ -1,0 +1,22 @@
+=== MODEL_NAME ===
+CNN+Transformer
+
+=== ACCURACY ===
+0.5984360625574977
+
+=== CLASSIFICATION_REPORT ===
+              precision    recall  f1-score   support
+
+          CD       0.68      0.32      0.44       412
+         HYP       0.00      0.00      0.00       113
+          MI       0.48      0.40      0.44      1047
+        NORM       0.66      0.91      0.77      1953
+      RHYTHM       0.00      0.00      0.00        12
+        STTC       0.45      0.32      0.37       751
+         nan       0.79      0.52      0.63        60
+
+    accuracy                           0.60      4348
+   macro avg       0.44      0.35      0.38      4348
+weighted avg       0.56      0.60      0.56      4348
+
+

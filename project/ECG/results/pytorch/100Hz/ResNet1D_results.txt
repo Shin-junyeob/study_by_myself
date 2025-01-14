@@ -1,0 +1,22 @@
+=== MODEL_NAME ===
+ResNet1D
+
+=== ACCURACY ===
+0.5662373505059798
+
+=== CLASSIFICATION_REPORT ===
+              precision    recall  f1-score   support
+
+          CD       0.64      0.21      0.31       412
+         HYP       0.00      0.00      0.00       113
+          MI       0.42      0.43      0.43      1047
+        NORM       0.64      0.88      0.74      1953
+      RHYTHM       0.00      0.00      0.00        12
+        STTC       0.44      0.27      0.33       751
+         nan       0.86      0.10      0.18        60
+
+    accuracy                           0.57      4348
+   macro avg       0.43      0.27      0.29      4348
+weighted avg       0.54      0.57      0.53      4348
+
+

@@ -1,0 +1,19 @@
+=== ACCURACY ===
+0.5131094756209752
+
+=== CLASSIFICATION_REPORT ===
+              precision    recall  f1-score   support
+
+          CD       0.63      0.09      0.16       412
+         HYP       0.00      0.00      0.00       113
+          MI       0.44      0.28      0.34      1047
+        NORM       0.53      0.97      0.68      1953
+      RHYTHM       0.00      0.00      0.00        12
+        STTC       0.21      0.02      0.03       751
+         nan       0.00      0.00      0.00        60
+
+    accuracy                           0.51      4348
+   macro avg       0.26      0.19      0.17      4348
+weighted avg       0.44      0.51      0.41      4348
+
+

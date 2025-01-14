@@ -1,0 +1,1 @@
+Best Parameters: {'hidden_dim': 256, 'num_heads': 8, 'num_layers': 3, 'dropout': 0.102, 'lr': 1.46e-4, 'batch_size': 32}}

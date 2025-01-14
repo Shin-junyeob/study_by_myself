@@ -5,6 +5,7 @@ import wfdb
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import classification_report, accuracy_score
 from torch.utils.data import DataLoader, TensorDataset
@@ -47,6 +48,10 @@ def train_and_evaluate_pytorch_model(model, X_train, y_train, X_test, y_test, en
     print(f'Operating about {model_name} ...')
     X_train = torch.tensor(X_train[:, np.newaxis, :], dtype=torch.float32)
     X_test = torch.tensor(X_test[:, np.newaxis, :], dtype=torch.float32)
+    if model_name == 'CNNTransformerECGModel':
+        X_train = X_train.permute(0, 2, 1)
+        X_test = X_test.permute(0, 2, 1)
+
     y_train = torch.tensor(y_train, dtype=torch.long)
     y_test = torch.tensor(y_test, dtype=torch.long)
 
@@ -60,21 +65,27 @@ def train_and_evaluate_pytorch_model(model, X_train, y_train, X_test, y_test, en
 
     # Training loop
     model.train()
+    print(f"Training {model_name} ...")
     for epoch in range(10):
-        for X_batch, y_batch in train_loader:
-            optimizer.zero_grad()
-            outputs = model(X_batch)
-            loss = criterion(outputs, y_batch)
-            loss.backward()
-            optimizer.step()
+        epoch_loss = 0
+        with tqdm(train_loader, desc=f"Epoch {epoch+1}/{10} - {model_name}") as pbar:
+            for X_batch, y_batch in pbar:
+                optimizer.zero_grad()
+                outputs = model(X_batch)
+                loss = criterion(outputs, y_batch)
+                loss.backward()
+                optimizer.step()
+                epoch_loss += loss.item()
+                pbar.set_postfix({"Loss": epoch_loss / len(train_loader)})
 
     # Evaluation
     model.eval()
     y_pred = []
     with torch.no_grad():
-        for X_batch, _ in test_loader:
-            outputs = model(X_batch)
-            y_pred.extend(torch.argmax(outputs, axis=1).numpy())
+        with tqdm(test_loader, desc=f"Evaluation - {model_name}") as pbar:
+            for X_batch, _ in pbar:
+                outputs = model(X_batch)
+                y_pred.extend(torch.argmax(outputs, axis=1).numpy())
 
     accuracy = accuracy_score(y_test.numpy(), y_pred)
     report = classification_report(y_test.numpy(), y_pred, target_names=encoder.classes_)
@@ -111,9 +122,10 @@ def main():
     ]
     
     results = []
-    for entry in models:
+    for entry in tqdm(models, desc="Model Training and Evaluation Progress"):
         accuracy, report = train_and_evaluate_pytorch_model(entry["model"], X_train, y_train, X_test, y_test, encoder, output_path, entry["name"])
         results.append({"Model": entry["name"], "Accuracy": accuracy})
+
 
     results_df = pd.DataFrame(results)
     results_df.to_csv(os.path.join(output_path, "results_summary.csv"), index=False)
