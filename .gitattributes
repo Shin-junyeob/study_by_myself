@@ -1,3 +1,4 @@
-project/HMP/reference/refence/qza filter=lfs diff=lfs merge=lfs -text
+project/HMP/reference/refence.qza filter=lfs diff=lfs merge=lfs -text
 project/HMP/results/exported_taxonomy/taxonomy.tsv filter=lfs diff=lfs merge=lfs -text
-project/HMP/results/silva-138-99-nb-classifier/qza filter=lfs diff=lfs merge=lfs -text
+project/HMP/results/silva-138-99-nb-classifier.qza filter=lfs diff=lfs merge=lfs -text
+project/HMP/reference/reference.qza filter=lfs diff=lfs merge=lfs -text
